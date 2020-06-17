@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-2"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <zk xmlns="http://www.zkoss.org/2005/zk/config" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.zkoss.org/2005/zk/config http://www.zkoss.org/2005/zk/config/zk.xsd">
     <session-config>
@@ -11,4 +11,9 @@
 <!--    <listener>-->
 <!--        <listener-class>SessionListener</listener-class>-->
 <!--    </listener>-->
+    <system-config>
+<!--        <upload-charset>ISO-8859-2</upload-charset> &lt;!&ndash; ISO-8859-2 in my case &ndash;&gt;-->
+        <upload-charset-finder-class>user.minicrm.server.util.TikaCharsetFinder</upload-charset-finder-class>
+    </system-config>
+
 </zk>

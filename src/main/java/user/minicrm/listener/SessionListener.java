@@ -12,6 +12,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
+import java.nio.charset.Charset;
 import java.util.Properties;
 
 public class SessionListener implements HttpSessionListener {
@@ -20,6 +21,7 @@ public class SessionListener implements HttpSessionListener {
 
     public SessionListener() {
         LOGGER.info("SessionListener létrehozva");
+        LOGGER.info("Default Charset: " + Charset.defaultCharset());
     }
 
     public void sessionCreated(HttpSessionEvent se) {

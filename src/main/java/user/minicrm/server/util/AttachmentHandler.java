@@ -1,22 +1,16 @@
 package user.minicrm.server.util;
 
-import org.apache.any23.encoding.TikaEncodingDetector;
+import org.apache.log4j.Logger;
+import org.zkoss.util.media.AMedia;
 import org.zkoss.util.media.Media;
+import org.zkoss.zhtml.Filedownload;
 import user.minicrm.common.beans.CRMAttachment;
 import user.minicrm.common.beans.CRMCustomer;
 import user.minicrm.common.beans.CRMProject;
 import user.minicrm.common.beans.CRMProjectIssue;
-import org.apache.log4j.Logger;
-import org.zkoss.util.media.AMedia;
-import org.zkoss.zhtml.Filedownload;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -24,6 +18,11 @@ import java.util.zip.ZipOutputStream;
 public class AttachmentHandler {
     private static final Logger LOGGER = Logger.getLogger(AttachmentHandler.class);
     private static Properties properties = (Properties) SessionUtil.getAttribute("properties");
+    private static String charsetName;
+
+    public static void setCharsetName(String name) {
+        charsetName = name;
+    }
 
     public static String getNewDirectoryPath(CRMCustomer customer, CRMProject project, CRMProjectIssue issue) {
         StringBuilder newPath = new StringBuilder();
@@ -91,15 +90,6 @@ public class AttachmentHandler {
             byte[] buffer = new byte[inputStream.available()];
             inputStream.read(buffer);
             LOGGER.debug("A csatolmány betöltése sikeres volt a temp mappából.");
-            // String extension = ".bin";
-//			 String fileType = getFileType(tempPath);
-//			 if (fileType != null) {
-            // String ext = mimeTypes.get(fileType);
-            // if (ext == null) {
-            // logger.debug("A csatolm�ny form�tuma nincs a list�ban");
-            // } else
-            // extension = ext;
-            // }
             String directoryName = getNewDirectoryPath(customer, project, issue);
             String fileName = attachment.getName();
             String relativePath = directoryName + "/" + fileName;
@@ -129,54 +119,91 @@ public class AttachmentHandler {
         return attachment;
     }
 
+//    public static CRMAttachment saveNoBinaryAttachment(Media media, CRMAttachment attachment, CRMCustomer customer, CRMProject project, CRMProjectIssue issue) {
+//        String string = media.getStringData();
+//        byte[] data = string.getBytes();
+//        String tempPath = loadAttachmentToTempDirectory(data, attachment);
+//        InputStream inputStream = null;
+//        try {
+//            inputStream = new FileInputStream(new File(tempPath));
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//        Charset charsetIn = null;
+//        Charset charsetOut = Charset.forName(properties.getProperty("characterEncoding"));
+//        LOGGER.debug("Beállított karakter kódolás a feltöltendő fájlokhoz: " + charsetOut.displayName());
+//        String guessCharset = null;
+//        try {
+//            guessCharset = guessCharset(inputStream).displayName();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        charsetIn = Charset.forName(guessCharset);
+//        LOGGER.debug("Feltöltendő fájl eredeti kódolása: " + guessCharset);
+//        ByteBuffer bufferIn = ByteBuffer.allocate(1024);
+//        String directoryName = getNewDirectoryPath(customer, project, issue);
+//        String fileName = attachment.getName();
+//        String relativePath = directoryName + "/" + fileName;
+//        String fullPath = properties.getProperty("attachment.basepath") + "/" + directoryName;
+//        File dir = new File(fullPath);
+//        dir.mkdirs();
+//        File targetFile = new File(dir, fileName);
+//        try {
+//            FileChannel channelIn = FileChannel.open(Paths.get(tempPath), StandardOpenOption.READ);
+//            FileChannel channelOut = FileChannel.open(Paths.get(String.valueOf(targetFile)), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+//            while (channelIn.read(bufferIn) > 0) {
+//                bufferIn.flip();
+//                CharBuffer bufferTemp = charsetIn.decode(bufferIn);
+//                ByteBuffer bufferOut = charsetOut.encode(bufferTemp);
+//                channelOut.write(bufferOut);
+//                bufferIn.rewind();
+//            }
+//            attachment.setFilePath(relativePath);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return attachment;
+//    }
+
     public static CRMAttachment saveNoBinaryAttachment(Media media, CRMAttachment attachment, CRMCustomer customer, CRMProject project, CRMProjectIssue issue) {
-        String string = media.getStringData();
-        byte[] data = string.getBytes();
+        String mediaContent = media.getStringData();
+        byte[] data = mediaContent.getBytes(Charset.forName(charsetName));
         String tempPath = loadAttachmentToTempDirectory(data, attachment);
         InputStream inputStream = null;
+        OutputStream outStream = null;
         try {
             inputStream = new FileInputStream(new File(tempPath));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        Charset charsetIn = null;
-        Charset charsetOut = Charset.forName(properties.getProperty("characterEncoding"));
-        LOGGER.debug("Beállított karakter kódolás a feltöltendő fájlokhoz: " + charsetOut.displayName());
-        String guessCharset = null;
-        try {
-            guessCharset = guessCharset(inputStream).displayName();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        charsetIn = Charset.forName(guessCharset);
-        LOGGER.debug("Feltöltendő fájl eredeti kódolása: " + guessCharset);
-        ByteBuffer bufferIn = ByteBuffer.allocate(1024);
-        String directoryName = getNewDirectoryPath(customer, project, issue);
-        String fileName = attachment.getName();
-        String relativePath = directoryName + "/" + fileName;
-        String fullPath = properties.getProperty("attachment.basepath") + "/" + directoryName;
-        File dir = new File(fullPath);
-        dir.mkdirs();
-        File targetFile = new File(dir, fileName);
-        try {
-            FileChannel channelIn = FileChannel.open(Paths.get(tempPath), StandardOpenOption.READ);
-            FileChannel channelOut = FileChannel.open(Paths.get(String.valueOf(targetFile)), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-            while (channelIn.read(bufferIn) > 0) {
-                bufferIn.flip();
-                CharBuffer bufferTemp = charsetIn.decode(bufferIn);
-                ByteBuffer bufferOut = charsetOut.encode(bufferTemp);
-                channelOut.write(bufferOut);
-                bufferIn.rewind();
-            }
+            byte[] buffer = new byte[inputStream.available()];
+            inputStream.read(buffer);
+            LOGGER.debug("A csatolmány betöltése sikeres volt a temp mappából.");
+            String directoryName = getNewDirectoryPath(customer, project, issue);
+            String fileName = attachment.getName();
+            String relativePath = directoryName + "/" + fileName;
+            String fullPath = properties.getProperty("attachment.basepath") + "/" + directoryName;
+            File dir = new File(fullPath);
+            dir.mkdirs();
+            File targetFile = new File(dir, fileName);
+            outStream = new FileOutputStream(targetFile);
+            outStream.write(buffer);
             attachment.setFilePath(relativePath);
-        } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.debug("A csatolmány mentése sikeres volt az alábbi helyre:" + fullPath + " " + relativePath);
+        } catch (Exception e) {
+            LOGGER.error("hiba", e);
+        } finally {
+            try {
+                if (inputStream != null)
+                    inputStream.close();
+                if (outStream != null)
+                    outStream.close();
+                File file = new File(properties.getProperty("tmpdir") + "/temp_" + attachment.getName());
+                file.delete();
+                LOGGER.debug("A temp állomány törlése sikeres volt az alábbi helyrõl: " + file.getAbsolutePath());
+            } catch (Exception e) {
+
+                LOGGER.error(e);
+            }
         }
         return attachment;
-    }
-
-    public static Charset guessCharset(InputStream is) throws IOException {
-        return Charset.forName(new TikaEncodingDetector().guessEncoding(is));
     }
 
     public static void deleteFile(String path) {
